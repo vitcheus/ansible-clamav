@@ -1,8 +1,7 @@
 ---
 galaxy_info:
   author: <ilya.shataev@gmail.com
-  description:
-  company: Install and configure antivirus software clamAV
+  description: Install and configure antivirus software clamAV
   license: MIT
   min_ansible_version: 2.7
   platforms:
