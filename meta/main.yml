@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: <ilya.shataev@gmail.com
+  description:
+  company: Install and configure antivirus software clamAV
+  license: MIT
+  min_ansible_version: 2.7
+  platforms:
+    - name: EL
+      versions:
+        - 7
+        - 8
+    - name: Fedora
+      versions:
+        - 29
+  galaxy_tags:
+    - clamav
+    - antivirus
+    - security
+    - centos
+    - centos7
+    - rhel
+    - rhel7
+    - fedora
+
+dependencies: []

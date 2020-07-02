@@ -1,0 +1,28 @@
+---
+clamav_daemon_config_path: /etc/clamd.d/scan.conf
+clamav_daemon_localsocket: /var/run/clamd.scan/clamd.sock
+
+clamav_freshclam_config_path: /etc/freshclam.conf
+
+clamav_log_config:
+  - option: LogFile
+    value:  "{{ clamav_daemon_log_dir }}/clamd.scan"
+    path: "{{ clamav_daemon_config_path }}"
+  - option: UpdateLogFile
+    value: "{{ clamav_freshclam_log_dir }}/freshclam.log"
+    path: "{{ clamav_freshclam_config_path }}"
+
+__clamav_user: clamscan
+__clamav_group: clamscan
+__freshclam_user: clamupdate
+__freshclam_group: clamupdate
+
+__clamav_daemon: 'clamd@scan'
+__clamav_daemon_log_dir: /var/log
+
+__clamav_freshclam_daemon: 'clamav-freshclam'
+__clamav_freshclam_log_dir: /var/log
+
+clamav_selinux_packages_prerequisites:
+  - python3-libselinux
+  - policycoreutils-python-utils

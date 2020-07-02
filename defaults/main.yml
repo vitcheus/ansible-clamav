@@ -1,0 +1,23 @@
+---
+clamav_os_packages:
+  - clamav
+  - clamav-update
+  - clamav-scanner-systemd
+
+clamav_daemon_default_config:
+  - regexp: '^.*Example$'
+    state: absent
+  - regexp: '^.*LocalSocket .*$'
+    line: 'LocalSocket {{ clamav_daemon_localsocket }}'
+
+clamav_daemon_custom_config: []
+
+clamav_daemon_state: started
+clamav_daemon_enabled: true
+
+clamav_freshclam_custom_config: []
+
+clamav_freshclam_daemon_state: started
+clamav_freshclam_daemon_enabled: true
+
+clamav_managed_log: true

@@ -1,0 +1,107 @@
+---
+- name: "Include OS-specific variables"
+  include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_os_family }}{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_os_family }}.yml"
+      paths:
+        - vars
+  tags:
+    - clamav
+
+- name: "Install clamAV software"
+  package:
+    name: "{{ clamav_os_packages }}"
+    update_cache: yes
+  register: clamav_packages_install
+  tags:
+    - clamav
+
+- name: "Apply default setting for the ClamAV daemon"
+  lineinfile:
+    path: "{{ clamav_daemon_config_path }}"
+    regexp: '{{ item.regexp }}'
+    line: "{{ item.line | default('') }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ clamav_daemon_default_config }}"
+  tags:
+    - clamav
+
+- name: "Apply custom configuration for the ClamAV daemon"
+  lineinfile:
+    path: "{{ clamav_daemon_config_path }}"
+    regexp: "^#?{{ item.option }} .*$"
+    line: "{{ item.option }} {{ item.value | default('') }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ clamav_daemon_custom_config }}"
+  when: clamav_daemon_custom_config | length > 0
+  notify:
+    - "restart clamav daemon"
+  tags:
+    - clamav
+
+- name: "Apply custom configuration for the ClamAV freshclam"
+  lineinfile:
+    path: "{{ clamav_freshclam_config_path }}"
+    regexp: "^#?{{ item.option }} .*$"
+    line: "{{ item.option }} {{ item.value | default('') }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ clamav_freshclam_custom_config }}"
+  when: clamav_freshclam_custom_config | length > 0
+  notify:
+    - "restart clamav daemon"
+  tags:
+    - clamav
+
+- include_tasks: logging.yml
+  when: clamav_managed_log | bool
+  tags:
+    - clamav
+
+- include_tasks: selinux.yml
+  when: ansible_selinux.status | default("disabled") == "enabled"
+  tags:
+    - clamav
+
+- name: "Update virus DB after ClamAV packages change"
+  command: freshclam
+  register: clamav_freshclam_result
+  when: clamav_packages_install.changed
+  failed_when:
+    - clamav_freshclam_result is failed
+    - clamav_freshclam_result.stdout[0].find('locked by another process') != -1
+#    - clamav_freshclam_result.stderr.find('locked by another process') != -1
+  notify:
+    - "restart clamav daemon"
+
+- name: "Define clamav_daemon"
+  set_fact:
+    clamav_daemon: "{{ __clamav_daemon }}"
+  when: clamav_daemon is not defined
+  tags:
+    - clamav
+
+- name: "Define clamav_freshclam_daemon"
+  set_fact:
+    clamav_freshclam_daemon: "{{ __clamav_freshclam_daemon }}"
+  when: clamav_freshclam_daemon is not defined
+  tags:
+    - clamav
+
+- name: "Ensure ClamAV daemon is running"
+  service:
+    name: "{{ clamav_daemon }}"
+    state: "{{ clamav_daemon_state }}"
+    enabled: "{{ clamav_daemon_enabled }}"
+  tags:
+    - clamav
+
+- name: "Ensure ClamAV freshclam daemon is running"
+  service:
+    name: "{{ clamav_freshclam_daemon }}"
+    state: "{{ clamav_freshclam_daemon_state }}"
+    enabled: "{{ clamav_freshclam_daemon_enabled }}"
+  tags:
+    - clamav

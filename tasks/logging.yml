@@ -1,0 +1,119 @@
+---
+- name: "Define clamav_daemon_log_dir"
+  set_fact:
+    clamav_daemon_log_dir: "{{ __clamav_daemon_log_dir }}"
+  when: clamav_daemon_log_dir is not defined
+  tags:
+    - clamav
+
+- name: "Define clamav_freshclam_log_dir"
+  set_fact:
+    clamav_freshclam_log_dir: "{{ __clamav_freshclam_log_dir }}"
+  when: clamav_freshclam_log_dir is not defined
+  tags:
+    - clamav
+
+- name: "Define clamav_user"
+  set_fact:
+    clamav_user: "{{ __clamav_user }}"
+  when: clamav_user is not defined
+  tags:
+    - clamav
+
+- name: "Define clamav_group"
+  set_fact:
+    clamav_group: "{{ __clamav_group }}"
+  when: clamav_group is not defined
+  tags:
+    - clamav
+
+- name: "Define freshclam_user"
+  set_fact:
+    freshclam_user: "{{ __freshclam_user }}"
+  when: freshclam_user is not defined
+  tags:
+    - clamav
+
+- name: "Define freshclam_group"
+  set_fact:
+    freshclam_group: "{{ __freshclam_group }}"
+  when: freshclam_group is not defined
+  tags:
+    - clamav
+
+- name: "Ensure the log directories exists"
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: '0770'
+    owner: "{{ item.user }}"
+    group: "{{ item.group }}"
+  when: item.path != '/var/log'
+  loop:
+    - { path: '{{ clamav_daemon_log_dir }}', user: '{{ clamav_user }}', group: '{{ clamav_group }}' }
+    - { path: '{{ clamav_freshclam_log_dir }}', user: '{{ freshclam_user }}', group: '{{ freshclam_group }}' }
+  tags:
+    - clamav
+
+- name: "Check if ClamScan log file exists"
+  stat:
+    path: "{{ clamav_daemon_log_dir }}/clamd.scan"
+  register: clamav_scan_log_check_result
+  failed_when: false
+  changed_when: false
+  tags:
+    - clamav
+
+- name: "Create ClamScan log file if it doesn't exist"
+  file:
+    path: "{{ clamav_daemon_log_dir }}/clamd.scan"
+    state: touch
+    owner: "{{ clamav_user }}"
+    group: "{{ clamav_group }}"
+    mode: '0660'
+  when: >
+    clamav_scan_log_check_result is defined and (
+        not clamav_scan_log_check_result.stat.exists or
+        clamav_scan_log_check_result.stat.pw_name != clamav_user or
+        clamav_scan_log_check_result.stat.gr_name != clamav_group
+    )
+  tags:
+    - clamav
+
+- name: "Check if FreshClam log file exists"
+  stat:
+    path: "{{ clamav_freshclam_log_dir }}/freshclam.log"
+  register: clamav_freshclam_log_check_result
+  failed_when: false
+  tags:
+    - clamav
+
+- name: "Create FreshClam log file if it doesn't exist"
+  file:
+    path: "{{ clamav_freshclam_log_dir }}/freshclam.log"
+    state: touch
+    owner: "{{ freshclam_user }}"
+    group: "{{ freshclam_group }}"
+    mode: '0660'
+  when: >
+    clamav_freshclam_log_check_result is defined and (
+        not clamav_freshclam_log_check_result.stat.exists or
+        clamav_freshclam_log_check_result.stat.pw_name != freshclam_user or
+        clamav_freshclam_log_check_result.stat.gr_name != freshclam_group
+    )
+  tags:
+    - clamav
+
+- name: "Apply logging configuration for the ClamAV software"
+  lineinfile:
+    path: "{{ item.path }}"
+    regexp: "^#?{{ item.option }} .*$"
+    line: "{{ item.option }} {{ item.value | default('') }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ clamav_log_config }}"
+  notify:
+    - "restart clamav daemon"
+  tags:
+    - clamav
+
+# TODO add selinux config for log file

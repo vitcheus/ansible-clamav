@@ -1,0 +1,42 @@
+---
+
+- name: "Install selinux prerequisites package"
+  package:
+    name: "{{ clamav_selinux_packages_prerequisites }}"
+    update_cache: yes
+  tags:
+    - clamav
+
+- name: "Configure SELinux for ClamAV"
+  seboolean:
+    name: "{{ item }}"
+    state: yes
+    persistent: yes
+  when: ansible_selinux.status | default("disabled") == "enabled"
+  loop:
+    - antivirus_can_scan_system
+    - antivirus_use_jit
+  tags:
+    - clamav
+
+- name: "Selinux logging setting"
+  block:
+    - name: "Set selinux file context mapping"
+      sefcontext:
+        target: "{{ item }}"
+        setype: antivirus_log_t
+        state: present
+      loop:
+        - "{{ clamav_daemon_log_dir }}/clamd.scan"
+        - "{{ clamav_freshclam_log_dir }}/freshclam.log"
+
+    - name: "Apply new SELinux file context to filesystem"
+      command: "restorecon -irv {{ item }}"
+      changed_when: False
+      loop:
+        - "{{ clamav_daemon_log_dir }}/clamd.scan"
+        - "{{ clamav_freshclam_log_dir }}/freshclam.log"
+
+  when: clamav_managed_log | bool
+  tags:
+    - clamav
