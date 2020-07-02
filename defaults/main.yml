@@ -20,4 +20,4 @@ clamav_freshclam_custom_config: []
 clamav_freshclam_daemon_state: started
 clamav_freshclam_daemon_enabled: true
 
-clamav_managed_log: true
+clamav_managed_log: false
