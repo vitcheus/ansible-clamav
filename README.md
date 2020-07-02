@@ -29,7 +29,7 @@ You can change all variables by group_vars or host_vars
 | `clamav_daemon_custom_config` | **No** | Custom configuration for clamav | [] | 
 | `clamav_daemon_state` | **No** | ClamAV daemon state | started | 
 | `clamav_daemon_enabled` | **No** | Should service enable at the boot | true |
-| `clamav_freshclam_custom_config` | **No** | Custom configuration for freshclam | 0 |
+| `clamav_freshclam_custom_config` | **No** | Custom configuration for freshclam | [] |
 | `clamav_freshclam_daemon_state` | **No** | ClamAV update daemon state | started |
 | `clamav_freshclam_daemon_enabled` | **No** | Should service enable at the boot | true | 
 | `clamav_managed_log` | **No** | Managed log file for service | false | 
@@ -44,13 +44,14 @@ List of hashes `clamav_freshclam_custom_config` and `clamav_daemon_custom_config
 `option` and `value` and optional items `state`
 
 like this:
-
+```
 clamav_freshclam_custom_config:
   - option: item1 
     value: value1
   - option: item2
     value: value2
     state: absent
+```
 
 All configuration parameters you can see on the [clamAV documentation][1]
 
